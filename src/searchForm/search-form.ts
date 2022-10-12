@@ -1,4 +1,7 @@
-import { renderBlock } from "./lib.js";
+import { renderBlock } from "../lib";
+import { renderSearchResultsBlock } from "./search-results";
+import { searchForm } from "./searchForm";
+import { showResult } from "./showResult";
 
 export function renderSearchFormBlock(dateOut: Date, dateIn: Date) {
   const dateNow = new Date();
@@ -24,11 +27,11 @@ export function renderSearchFormBlock(dateOut: Date, dateIn: Date) {
         <div class="row">
           <div>
             <label for="check-in-date">Дата заезда</label>
-            <input id="check-in-date" type="date" value="2021-05-11" min="${dateOut}" max="${dateOutMax}" name="checkin" />
+            <input id="check-in-date" type="date" value="2021-05-11" min="${dateOut}" max="${dateOutMax}" name="arrival />
           </div>
           <div>
             <label for="check-out-date">Дата выезда</label>
-            <input id="check-out-date" type="date" value="2021-05-13" min="${dateIn}" max=${dateInMax} name="checkout" />
+            <input id="check-out-date" type="date" value="2021-05-13" min="${dateIn}" max=${dateInMax} name="departure" />
           </div>
           <div>
             <label for="max-price">Макс. цена суток</label>
@@ -42,4 +45,11 @@ export function renderSearchFormBlock(dateOut: Date, dateIn: Date) {
     </form>
     `
   );
+  (document.querySelector(".search-form") as HTMLFormElement).onsubmit = (
+    event
+  ) => {
+    event.preventDefault();
+    renderSearchResultsBlock();
+    showResult(searchForm());
+  };
 }
