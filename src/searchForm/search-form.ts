@@ -1,8 +1,15 @@
 import { renderBlock } from "../lib";
-import { renderSearchResultsBlock } from "./search-results";
+import { renderToast } from "../toast/index";
+import {
+  renderEmptyOrErrorSearchBlock,
+  renderSearchResultsBlock,
+} from "./search-results";
 import { searchForm } from "./searchForm";
 import { showResult } from "./showResult";
-
+import { formatRentItems } from "../helpers/formatRentItems";
+import { BookingItem } from "../service/serviceTypes";
+import { FlatRentSdk } from "../sdk/flat-rent-sdk";
+import { search } from "../service/service";
 export function renderSearchFormBlock(dateOut: Date, dateIn: Date) {
   const dateNow = new Date();
   const dateOutMax = dateOut.setMonth(dateNow.getMonth() + 1);
@@ -45,11 +52,54 @@ export function renderSearchFormBlock(dateOut: Date, dateIn: Date) {
     </form>
     `
   );
-  (document.querySelector(".search-form") as HTMLFormElement).onsubmit = (
+
+  (document.querySelector(".search-form") as HTMLFormElement).onsubmit = async (
     event
   ) => {
     event.preventDefault();
-    renderSearchResultsBlock();
-    showResult(searchForm());
+    try {
+      const { arrival, departure, maxPrice } = showResult(searchForm());
+
+      const results = (await search(
+        arrival,
+        departure,
+        maxPrice > 0 ? maxPrice : null
+      )) as Array<BookingItem>;
+
+      const rent = new FlatRentSdk();
+
+      const resultsFromSDK = await rent.search({
+        city: "Санкт-Петербург",
+        checkInDate: arrival,
+        checkOutDate: departure,
+        priceLimit: maxPrice,
+      });
+
+      if (results.length > 0) {
+        navigator.geolocation.getCurrentPosition(
+          (data) => {
+            renderSearchResultsBlock([
+              ...results,
+              ...formatRentItems(resultsFromSDK, data.coords),
+            ]);
+          },
+          () => {
+            renderSearchResultsBlock([
+              ...results,
+              ...formatRentItems(resultsFromSDK, {
+                latitude: 0,
+                longitude: 0,
+              } as GeolocationCoordinates),
+            ]);
+          }
+        );
+      } else {
+        renderEmptyOrErrorSearchBlock("Нет подходящих предложений");
+      }
+    } catch (error) {
+      if (error instanceof Error) {
+        renderToast({ text: error.message, type: "error" });
+      }
+    }
   };
 }
