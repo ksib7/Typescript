@@ -18,8 +18,8 @@ export function renderUserBlock(
           <p class="name">${name}</p>
           <p class="fav">
             <i class="heart-icon${
-  hasFavoriteItems ? " active" : ""
-}"></i>${favoritesCaption}
+              hasFavoriteItems ? " active" : ""
+            }"></i>${favoritesCaption}
           </p>
       </div>
     </div>
