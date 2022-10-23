@@ -1,6 +1,8 @@
 import { renderBlock } from "../helpers/renderBlock.js";
 import { BookingItem } from "../service/serviceTypes";
-import { BookingItemLocalStorage } from "./searchFormTypes";
+import { BookingItemLocalStorage, SortValues } from "./searchFormTypes";
+
+// Bad implementation but I have to hurry
 
 export function renderSearchStubBlock() {
   renderBlock(
@@ -125,6 +127,35 @@ const createBookingItem = ({
   return elem;
 };
 
+function renderSortedList<ListItem extends BookingItem>(
+  target: HTMLElement,
+  data: Array<ListItem>,
+  sortBy?: SortValues
+) {
+  const result: Array<string> = [];
+  data
+    .sort((a, b) => {
+      if (sortBy) {
+        switch (sortBy) {
+          case "cheap":
+            return a.price - b.price;
+          case "expensive":
+            return b.price - a.price;
+          case "near":
+            return a.remoteness - b.remoteness;
+          default:
+            return 1;
+        }
+      }
+      return 1;
+    })
+    .forEach((elem) => {
+      const l = createBookingItem(elem);
+      result.push(l.outerHTML);
+    });
+  target.innerHTML = result.join("");
+}
+
 export const renderSearchResultsBlock = (results: Array<BookingItem>) => {
   renderBlock(
     "search-results-block",
@@ -133,10 +164,10 @@ export const renderSearchResultsBlock = (results: Array<BookingItem>) => {
         <p>Результаты поиска</p>
         <div class="search-results-filter">
             <span><i class="icon icon-filter"></i> Сортировать:</span>
-            <select>
-                <option selected="">Сначала дешёвые</option>
-                <option selected="">Сначала дорогие</option>
-                <option>Сначала ближе</option>
+            <select class="sort-select">
+                <option value="cheap">Сначала дешёвые</option>
+                <option value="expensive" selected>Сначала дорогие</option>
+                <option value="near">Сначала ближе</option>
             </select>
         </div>
     </div>
@@ -144,9 +175,19 @@ export const renderSearchResultsBlock = (results: Array<BookingItem>) => {
     `
   );
 
-  const resultsList = document.querySelector(".results-list");
-  results.forEach((elem) => {
-    const l = createBookingItem(elem);
-    resultsList?.appendChild(l);
+  const resultsList = document.querySelector(
+    ".results-list"
+  ) as HTMLUListElement;
+
+  (
+    document.querySelector(".sort-select") as HTMLSelectElement
+  ).addEventListener("change", (event) => {
+    renderSortedList(
+      resultsList,
+      results,
+      (event.target as HTMLSelectElement).value as SortValues
+    );
   });
+
+  renderSortedList(resultsList, results, "expensive");
 };
